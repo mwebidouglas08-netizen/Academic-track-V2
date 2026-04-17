@@ -1,6 +1,8 @@
 require('dotenv').config();
 require('express-async-errors');
 
+const { initDb } = require('./init-db');
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -73,8 +75,15 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error.' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ AcademiTrack running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
-  console.log(`   Student portal: http://localhost:${PORT}/`);
-  console.log(`   Admin portal:   http://localhost:${PORT}/admin/`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✅ AcademiTrack running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+      console.log(`   Student portal: http://localhost:${PORT}/`);
+      console.log(`   Admin portal:   http://localhost:${PORT}/admin/`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Server failed to start due to database initialization error:', err.message);
+    process.exit(1);
+  });
