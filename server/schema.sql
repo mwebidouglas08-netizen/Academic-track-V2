@@ -80,13 +80,13 @@ CREATE INDEX IF NOT EXISTS idx_sub_history_sub ON submission_history(submission_
 CREATE INDEX IF NOT EXISTS idx_notifs_recipient ON notifications(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_messages_student ON messages(student_id);
 
--- Default Super Admin: username=superadmin, password=Admin@1234
+-- Default Super Admin: username=olalekennedy, password=@Ken_olale
 -- Change immediately after first login!
 INSERT INTO moderators (name, username, email, password_hash, role)
 VALUES (
   'Super Administrator',
-  'superadmin',
+  'olalekennedy',
   'admin@academitrack.edu',
-  '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewKyNiLXCFlAgMdm',
+  '$2a$12$RIHVBmCGNSre9XyoMPzHiuYGL5bBnBOzMsl.GFy9wMHGiJGv3zXKi',
   'Super Admin'
 ) ON CONFLICT (username) DO NOTHING;
