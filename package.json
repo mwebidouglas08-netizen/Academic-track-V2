@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "install:all": "cd server && npm install && cd ../client && npm install && cd ../admin && npm install",
-    "build": "cd client && npm run build && cd ../admin && npm run build",
+    "build": "cd client && npm run build && cd ../admin && npm run build && mkdir -p server/public/client server/public/admin && cp -r client/dist/. server/public/client/ && cp -r admin/dist/. server/public/admin/",
     "start": "cd server && node index.js",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
