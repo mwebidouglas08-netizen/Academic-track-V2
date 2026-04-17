@@ -89,4 +89,6 @@ VALUES (
   'admin@academitrack.edu',
   '$2a$12$RIHVBmCGNSre9XyoMPzHiuYGL5bBnBOzMsl.GFy9wMHGiJGv3zXKi',
   'Super Admin'
-) ON CONFLICT (username) DO NOTHING;
+) ON CONFLICT (email) DO UPDATE SET
+  username      = EXCLUDED.username,
+  password_hash = EXCLUDED.password_hash;
