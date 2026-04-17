@@ -10,6 +10,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust the first proxy hop (required on Railway and other reverse-proxy platforms
+// so that express-rate-limit can read the real client IP from X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
@@ -25,9 +29,9 @@ const origins = [
 app.use(cors({ origin: (o, cb) => (!o || origins.includes(o) ? cb(null, true) : cb(null, true)), credentials: true }));
 
 // Rate limiting
-app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 30 }));
-app.use('/api/admin/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 15 }));
-app.use('/api/', rateLimit({ windowMs: 60 * 1000, max: 200 }));
+app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 30, keyGenerator: (req) => req.ip, skip: (req) => req.path.startsWith('/health') }));
+app.use('/api/admin/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 15, keyGenerator: (req) => req.ip, skip: (req) => req.path.startsWith('/health') }));
+app.use('/api/', rateLimit({ windowMs: 60 * 1000, max: 200, keyGenerator: (req) => req.ip, skip: (req) => req.path.startsWith('/health') }));
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));

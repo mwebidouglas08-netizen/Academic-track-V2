@@ -14,7 +14,7 @@ async function query(text, params) {
   try {
     return await pool.query(text, params);
   } catch (err) {
-    console.error('DB error:', err.message, text.substring(0, 100));
+    console.error('DB error:', err, text.substring(0, 100));
     throw err;
   }
 }
