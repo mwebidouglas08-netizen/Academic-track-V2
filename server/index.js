@@ -28,7 +28,11 @@ const { notifRouter, msgRouter } = require('./routes/communications');
 app.use('/api/notifications', notifRouter);
 app.use('/api/messages',      msgRouter);
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString(), env: process.env.NODE_ENV || 'development' }));
+app.get('/health', (_req, res) => res.json({
+  status: 'ok',
+  timestamp: new Date().toISOString(),
+  env: process.env.NODE_ENV || 'development',
+}));
 
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, 'public', 'client');
@@ -67,30 +71,52 @@ async function ensureAdmin(attempt) {
   try {
     const bcrypt    = require('bcryptjs');
     const { query } = require('./db');
-    const username  = process.env.ADMIN_USERNAME || 'academitrack_admin';
-    const password  = process.env.ADMIN_PASSWORD || 'Admin@Academi2025';
-    const hash      = await bcrypt.hash(password, 12);
+
+    // Step 1: ensure the extension and table exist regardless of schema.sql
+    await query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+    await query(`
+      CREATE TABLE IF NOT EXISTS moderators (
+        id            UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name          VARCHAR(120) NOT NULL,
+        username      VARCHAR(60)  UNIQUE NOT NULL,
+        email         VARCHAR(160) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role          VARCHAR(60)  DEFAULT 'Moderator',
+        is_active     BOOLEAN      DEFAULT TRUE,
+        created_at    TIMESTAMPTZ  DEFAULT NOW()
+      )
+    `);
+
+    // Step 2: hash the password at runtime and upsert admin
+    const username = process.env.ADMIN_USERNAME || 'academitrack_admin';
+    const password = process.env.ADMIN_PASSWORD || 'Admin@Academi2025';
+    const hash     = await bcrypt.hash(password, 12);
+
     await query(
       `INSERT INTO moderators (name, username, email, password_hash, role, is_active)
        VALUES ($1, $2, $3, $4, 'Super Admin', TRUE)
        ON CONFLICT (username) DO UPDATE
          SET password_hash = EXCLUDED.password_hash,
-             name = EXCLUDED.name,
-             role = 'Super Admin',
-             is_active = TRUE`,
+             name          = EXCLUDED.name,
+             role          = 'Super Admin',
+             is_active     = TRUE`,
       ['System Administrator', username, 'admin@academitrack.edu', hash]
     );
+
     console.log(`\n🔑  Admin ready (attempt ${attempt}/${MAX})`);
     console.log(`    Username : ${username}`);
     console.log(`    Password : ${password}`);
     console.log(`    Portal   : /admin/\n`);
+
   } catch (err) {
     console.warn(`⚠️  Admin seed attempt ${attempt}/${MAX} failed: ${err.message}`);
     if (attempt < MAX) {
       await sleep(3000);
       await ensureAdmin(attempt + 1);
     } else {
-      console.error('❌  Admin seed failed after all retries. Check DATABASE_URL and schema.sql.');
+      console.error('❌  Admin seed failed after all retries.');
+      console.error('    Check DATABASE_URL env var is set in Railway.');
+      console.error('    Then run schema.sql manually in the Railway PostgreSQL Query tab.');
     }
   }
 }
